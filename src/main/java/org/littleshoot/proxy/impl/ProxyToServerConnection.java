@@ -61,12 +61,19 @@ import static org.littleshoot.proxy.impl.ConnectionState.HANDSHAKING;
 /**
  * Represents a connection from our proxy to a server on the web. ProxyConnections are reused fairly
  * liberally, and can go from disconnected to connected, back to disconnected and so on.
+ * 表示从我们的代理服务器到网络上服务器的连接。
+ * ProxyConnections可以相当自由地重用，并且可以从断开连接变为已连接，再回到断开连接等
  *
  * <p>Connecting a {@link ProxyToServerConnection} can involve more than just connecting the
  * underlying {@link Channel}. In particular, the connection may use encryption (i.e. TLS) and it
  * may also establish an HTTP CONNECT tunnel. The various steps involved in fully establishing a
  * connection are encapsulated in the property {@link #connectionFlow}, which is initialized in
  * {@link #initializeConnectionFlow()}.
+ *
+ * 连接{@link ProxyToServerConnection}不仅可以连接基础{@link Channel}。
+ * 尤其是，该连接可以使用加密（即TLS），并且它还可以建立HTTP CONNECT隧道。
+ * 完全建立连接所涉及的各个步骤封装在属性{@link #connectionFlow}中，
+ * 该属性在{@link #initializeConnectionFlow（）}中初始化。
  */
 @Sharable
 public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
@@ -80,11 +87,14 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
   private final Queue<ChainedProxy> availableChainedProxies;
 
   /** The filters to apply to response/chunks received from server. */
+  // 应用于从服务器收到的响应/块的过滤器
   private volatile HttpFilters currentFilters;
 
   /**
    * Encapsulates the flow for establishing a connection, which can vary depending on how things are
    * configured.
+   *
+   * 封装用于建立连接的流，该流可以根据事物的配置方式而有所不同
    */
   private volatile ConnectionFlow connectionFlow;
 
@@ -92,6 +102,10 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
    * Disables SNI when initializing connection flow in {@link #initializeConnectionFlow()}. This
    * value is set to true when retrying a connection without SNI to work around Java's SNI handling
    * issue (see {@link #connectionFailed(Throwable)}).
+   *
+   * 在{@link #initializeConnectionFlow（）}中初始化连接流时禁用SNI。
+   * 在没有SNI的情况下重试连接以解决Java的SNI处理问题时，
+   * 此值设置为true（请参阅{@link #connectionFailed（Throwable）}）
    */
   private volatile boolean disableSni = false;
 
@@ -99,31 +113,42 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
    * While we're in the process of connecting, it's possible that we'll receive a new message to
    * write. This lock helps us synchronize and wait for the connection to be established before
    * writing the next message.
+   *
+   * 当我们处于连接过程中时，可能会收到一条新消息，以便进行编写。
+   * 此锁可帮助我们在写下一条消息之前同步并等待连接建立
    */
   private final Object connectLock = new Object();
 
   /**
    * This is the initial request received prior to connecting. We keep track of it so that we can
    * process it after connection finishes.
+   * 这是在连接之前收到的初始请求。我们会跟踪它，以便在连接完成后可以对其进行处理。
    */
   private volatile HttpRequest initialRequest;
 
   /**
    * Keeps track of HttpRequests that have been issued so that we can associate them with responses
    * that we get back
+   *
+   * 跟踪已发出的HttpRequest，以便我们可以将它们与响应关联起来，然后返回
    */
   private volatile HttpRequest currentHttpRequest;
 
   /**
    * While we're doing a chunked transfer, this keeps track of the initial HttpResponse object for
    * our transfer (which is useful for its headers).
+   *
+   * 在执行分块传输时，这会跟踪我们的传输的初始HttpResponse对象（这对于其标头很有用）
+   *
    */
   private volatile HttpResponse currentHttpResponse;
 
   /** Limits bandwidth when throttling is enabled. */
+  // 启用限制时限制带宽
   private volatile GlobalTrafficShapingHandler trafficHandler;
 
   /** Minimum size of the adaptive recv buffer when throttling is enabled. */
+  // 启用限制时，自适应Recv缓冲区的最小大小
   private static final int MINIMUM_RECV_BUFFER_SIZE_BYTES = 64;
 
   /**
@@ -151,6 +176,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
       chainedProxyManager.lookupChainedProxies(initialHttpRequest, chainedProxies);
       if (chainedProxies.size() == 0) {
         // ChainedProxyManager returned no proxies, can't connect
+        // ChainedProxyManager没有返回代理，无法连接
         return null;
       }
     }
@@ -182,6 +208,10 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     this.currentFilters = initialFilters;
 
     // Report connection status to HttpFilters
+    // 向HttpFilters报告连接状态
+    /**************************************************************/
+    /*                  proxyToServerConnectionQueued             */
+    /**************************************************************/
     currentFilters.proxyToServerConnectionQueued();
 
     setupConnectionParameters();
@@ -195,6 +225,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
   @Override
   protected void read(Object msg) {
     if (isConnecting()) {
+      //在连接过程中，将消息转发到连接流
       LOG.debug("In the middle of connecting, forwarding message to connection flow: {}", msg);
       this.connectionFlow.read(msg);
     } else {
@@ -217,6 +248,10 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
       // proxy closes
       // the connection to the server, since we don't know what state the server thinks the
       // connection is in.
+      /*
+       从服务器创建一个“替代”的错误网关响应，因为我们无法理解服务器的实际响应是什么。
+       将替代响应上的keep-alive设置为false，以便代理关闭与服务器的连接，因为我们不知道服务器认为连接处于什么状态。
+       */
       FullHttpResponse substituteResponse =
           ProxyUtils.createFullHttpResponse(
               HttpVersion.HTTP_1_1,
@@ -226,6 +261,9 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
       httpResponse = substituteResponse;
     }
 
+    /**************************************************************/
+    /*                  serverToProxyResponseReceiving            */
+    /**************************************************************/
     currentFilters.serverToProxyResponseReceiving();
 
     rememberCurrentResponse(httpResponse);
@@ -234,6 +272,9 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     if (ProxyUtils.isChunked(httpResponse)) {
       return AWAITING_CHUNK;
     } else {
+      /**************************************************************/
+      /*                  serverToProxyResponseReceived            */
+      /**************************************************************/
       currentFilters.serverToProxyResponseReceived();
 
       return AWAITING_INITIAL;
@@ -261,14 +302,21 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
    *
    * <p>如果 HEAD 请求的结果显示在上一次 GET 请求后缓存的资源已经过期了,
    * 那么该缓存会失效, 即使 GET 请求已经完成. Responses to HEAD requests
-   * aren't supposed to have content, but Netty doesn't know that any given response is to a HEAD
+   *
+   * Responses to HEAD requests aren't supposed to have content, but Netty doesn't know that any given response is to a HEAD
    * request, so it needs to be told that there's no content so that it doesn't hang waiting for it.
+   *
+   * 对HEAD请求的响应不应该包含内容，但是Netty不知道任何给定的响应都是对HEAD请求的，
+   * 因此需要告知它没有内容，因此它不会挂起等待
    *
    * <p>See the documentation for {@link HttpResponseDecoder} for information about why HEAD
    * requests need special handling.
+   * 请参阅{@link HttpResponseDecoder}的文档，以获取有关HEAD请求为何需要特殊处理的信息
    *
    * <p>Thanks to <a href="https://github.com/nataliakoval">nataliakoval</a> for pointing out that
    * with connections being reused as they are, this needs to be sensitive to the current request.
+   *
+   * 感谢<a href="https://github.com/nataliakoval"> nataliakoval </a>指出由于连接已被重用，因此该连接必须对当前请求敏感
    */
   private class HeadAwareHttpResponseDecoder extends HttpResponseDecoder {
 
@@ -283,6 +331,10 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
       // negotiating a CONNECT request with a chained proxy
       // while it is running as a MITM. Since the response to a
       // CONNECT request does not have any content, we return true.
+      /*
+        当此代理作为MITM运行时，该代理正在与链接代理协商CONNECT请求时，当前HTTP请求可以为null。
+        由于对CONNECT请求的响应没有任何内容，因此我们返回true。
+       */
       if (currentHttpRequest == null) {
         return true;
       } else {
@@ -299,6 +351,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
 
   /**
    * Like {@link #write(Object)} and also sets the current filters to the given value.
+   * 像{@link #write（Object）}一样，还将当前过滤条件设置为给定值
    *
    * @param msg
    * @param filters
@@ -515,6 +568,8 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
    * Keeps track of the current HttpResponse so that we can associate its headers with future
    * related chunks for this same transfer.
    *
+   * 跟踪当前的HttpResponse，以便我们可以将其标头与与将来相关的块关联，以进行相同的传输
+   *
    * @param response
    */
   private void rememberCurrentResponse(HttpResponse response) {
@@ -524,11 +579,16 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     // analyze response headers for whether or not to close the
     // connection (which may not happen for a while for large, chunked
     // responses, for example).
+    /*
+      我们需要在此处进行复制，因为在需要执行诸如分析响应头以了解是否关闭连接之前，
+      响应会以各种方式进行修改（对于大型的分块响应可能会暂时发生这种情况， 例如）。
+     */
     currentHttpResponse = ProxyUtils.copyMutableResponseFields(response);
   }
 
   /**
    * Respond to the client with the given {@link HttpObject}.
+   * 使用给定的{@link HttpObject}响应客户端。
    *
    * @param httpObject
    */
@@ -621,6 +681,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
   }
 
   /** Opens the socket connection. */
+  // 打开套接字连接
   private ConnectionFlowStep ConnectChannel =
       new ConnectionFlowStep(this, CONNECTING) {
         @Override
@@ -670,6 +731,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
       };
 
   /** Writes the HTTP CONNECT to the server and waits for a 200 response. */
+  // 将HTTP CONNECT写入服务器并等待200响应
   private ConnectionFlowStep HTTPCONNECTWithChainedProxy =
       new ConnectionFlowStep(this, AWAITING_CONNECT_OK) {
         protected Future<?> execute() {
@@ -846,6 +908,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
 
   /**
    * Set up our connection parameters based on server address and chained proxies.
+   * 根据服务器地址和链接代理设置我们的连接参数
    *
    * @throws UnknownHostException when unable to resolve the hostname to an IP address
    */
@@ -858,10 +921,15 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
       this.transportProtocol = TransportProtocol.TCP;
 
       // Report DNS resolution to HttpFilters
+      // 向HttpFilters报告DNS解析
+      /**************************************************************/
+      /*                  proxyToServerResolutionStarted            */
+      /**************************************************************/
       this.remoteAddress = this.currentFilters.proxyToServerResolutionStarted(serverHostAndPort);
 
       // save the hostname and port of the unresolved address in hostAndPort, in case name
       // resolution fails
+      // 在名称解析失败的情况下，将未解析地址的主机名和端口保存在hostAndPort中
       String hostAndPort = null;
       try {
         if (this.remoteAddress == null) {
@@ -869,6 +937,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
           this.remoteAddress = addressFor(serverHostAndPort, proxyServer);
         } else if (this.remoteAddress.isUnresolved()) {
           // filter returned an unresolved address, so resolve it using the proxy server's resolver
+          // 过滤器返回了一个未解析的地址，因此请使用代理服务器的解析器进行解析
           hostAndPort =
               HostAndPort.fromParts(this.remoteAddress.getHostName(), this.remoteAddress.getPort())
                   .toString();
@@ -881,11 +950,17 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
         // unable to resolve the hostname to an IP address. notify the filters of the failure before
         // allowing the
         // exception to bubble up.
+        // 无法将主机名解析为IP地址。 在允许异常冒泡之前，通知失败的过滤器。
+        /**************************************************************/
+        /*                  proxyToServerResolutionFailed            */
+        /**************************************************************/
         this.currentFilters.proxyToServerResolutionFailed(hostAndPort);
 
         throw e;
       }
-
+      /**************************************************************/
+      /*                  proxyToServerResolutionSucceeded          */
+      /**************************************************************/
       this.currentFilters.proxyToServerResolutionSucceeded(serverHostAndPort, this.remoteAddress);
 
       this.localAddress = proxyServer.getLocalAddress();
@@ -895,13 +970,20 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
   /**
    * Initialize our {@link ChannelPipeline} to connect the upstream server. LittleProxy acts as a
    * client here.
+   * 初始化我们的{@link ChannelPipeline}以连接上游服务器。 LittleProxy在这里充当客户
    *
    * <p>A {@link ChannelPipeline} invokes the read (Inbound) handlers in ascending ordering of the
    * list and then the write (Outbound) handlers in descending ordering.
    *
+   * {@link ChannelPipeline}以列表的升序调用读（入站）处理程序，然后以降序调用写（出站）处理程序
+   *
    * <p>Regarding the Javadoc of {@link HttpObjectAggregator} it's needed to have the {@link
    * HttpResponseEncoder} or {@link HttpRequestEncoder} before the {@link HttpObjectAggregator} in
    * the {@link ChannelPipeline}.
+   *
+   * 关于{@link HttpObjectAggregator}的Javadoc，
+   * 需要在{@link ChannelPipeline}中的{@link HttpObjectAggregator}之前
+   * 放置{@link HttpResponseEncoder}或{@link HttpRequestEncoder}
    *
    * @param pipeline
    * @param httpRequest
@@ -924,6 +1006,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             proxyServer.getMaxChunkSize()));
 
     // Enable aggregation for filtering if necessary
+    // 启用聚合以进行过滤（如有必要）
     int numberOfBytesToBuffer =
         proxyServer.getFiltersSource().getMaximumResponseBufferSizeInBytes();
     if (numberOfBytesToBuffer > 0) {
@@ -941,14 +1024,18 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
 
   /**
    * Do all the stuff that needs to be done after our {@link ConnectionFlow} has succeeded.
+   * 完成我们的{@link ConnectionFlow}成功之后需要做的所有事情
    *
    * @param shouldForwardInitialRequest whether or not we should forward the initial HttpRequest to
    *     the server after the connection has been established.
+   *    shouldForwardInitialRequest建立连接后，是否应将初始HttpRequest转发给服务器
+   *
    */
   void connectionSucceeded(boolean shouldForwardInitialRequest) {
     become(AWAITING_INITIAL);
     if (this.chainedProxy != null) {
       // Notify the ChainedProxy that we successfully connected
+      // 通知ChainedProxy我们已成功连接
       try {
         this.chainedProxy.connectionSucceeded();
       } catch (Exception e) {
@@ -970,6 +1057,11 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
     // because the HttpObjectAggregator is in
     // the pipeline to generate FullHttpRequests), we need to manually release it to avoid a memory
     // leak.
+    /*
+     * 现在，我们完成了initialRequest：将其转发到上游服务器（HTTP请求），或者将其完全删除（HTTPS CONNECTs）。
+     * 如果对initialRequest进行了引用计数（通常是因为HttpObjectAggregator在生成FullHttpRequest的管道中），
+     * 则我们需要手动释放它以避免内存泄漏。
+     */
     if (initialRequest instanceof ReferenceCounted) {
       ((ReferenceCounted) initialRequest).release();
     }
@@ -978,11 +1070,14 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
   /**
    * Build an {@link InetSocketAddress} for the given hostAndPort.
    *
+   * 为给定的hostAndPort建立一个{@link InetSocketAddress}。
+   *
    * @param hostAndPort String representation of the host and port
    * @param proxyServer the current {@link DefaultHttpProxyServer}
    * @return a resolved InetSocketAddress for the specified hostAndPort
    * @throws UnknownHostException if hostAndPort could not be resolved, or if the input string could
    *     not be parsed into a host and port.
+   *     如果hostAndPort无法解析，或者输入字符串无法解析为主机和端口
    */
   public static InetSocketAddress addressFor(String hostAndPort, DefaultHttpProxyServer proxyServer)
       throws UnknownHostException {
@@ -991,6 +1086,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
       parsedHostAndPort = HostAndPort.fromString(hostAndPort);
     } catch (IllegalArgumentException e) {
       // we couldn't understand the hostAndPort string, so there is no way we can resolve it.
+      // 我们无法理解hostAndPort字符串，因此我们无法解决它
       throw new UnknownHostException(hostAndPort);
     }
 

@@ -228,10 +228,13 @@ public class ProxyUtils {
 
     /**
      * Make a copy of the response including all mutable fields.
+     * 复制响应，包括所有可变字段。
      * 
      * @param original
      *            The original response to copy from.
+     *            复制的原始回复
      * @return The copy with all mutable fields from the original.
+     *          具有原始所有可变字段的副本
      */
     public static HttpResponse copyMutableResponseFields(
             final HttpResponse original) {
