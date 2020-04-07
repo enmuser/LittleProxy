@@ -10,6 +10,7 @@ import javax.net.ssl.SSLSession;
 /**
  * Adapter of {@link ActivityTracker} interface that provides default no-op
  * implementations of all methods.
+ * {@link ActivityTracker}接口的适配器，提供所有方法的默认无操作实现
  */
 public class ActivityTrackerAdapter implements ActivityTracker {
 

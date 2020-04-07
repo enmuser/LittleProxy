@@ -7,6 +7,8 @@ import java.net.UnknownHostException;
 /**
  * Default implementation of {@link HostResolver} that just uses
  * {@link InetAddress#getByName(String)}.
+ *
+ * {@link HostResolver}的默认实现，仅使用{@link InetAddress＃getByName（String）}。
  */
 public class DefaultHostResolver implements HostResolver {
     @Override

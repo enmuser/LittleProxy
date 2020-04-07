@@ -6,6 +6,8 @@ import org.littleshoot.proxy.impl.ProxyToServerConnection;
 /**
  * Extension of {@link FlowContext} that provides additional information (which
  * we know after actually processing the request from the client).
+ *
+ * {@link FlowContext}的扩展提供了其他信息（在实际处理来自客户端的请求之后，我们知道）
  */
 public class FullFlowContext extends FlowContext {
     private final String serverHostAndPort;

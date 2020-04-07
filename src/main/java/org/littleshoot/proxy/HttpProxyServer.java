@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Interface for the top-level proxy server class.
+ * 顶级代理服务器类的接口
  */
 public interface HttpProxyServer {
 

@@ -12,6 +12,9 @@ import org.slf4j.spi.LocationAwareLogger;
  * A helper class that logs messages for ProxyConnections. All it does is make
  * sure that the Channel and current state are always included in the log
  * messages (if available).
+ *
+ * 记录ProxyConnections消息的帮助程序类。
+ * 它所做的就是确保始终将通道和当前状态包含在日志消息中
  * </p>
  *
  * <p>
@@ -19,6 +22,10 @@ import org.slf4j.spi.LocationAwareLogger;
  * report the line numbers of the caller rather than this helper class.
  * If the SLF4J binding does not provide a LocationAwareLogger, then a fallback
  * to Logger is provided.
+ *
+ * 请注意，这取决于我们使用LocationAwareLogger，
+ * 以便我们可以报告呼叫者的行号，而不是此帮助程序类。
+ * 如果SLF4J绑定未提供LocationAwareLogger，则提供对Logger的后备
  * </p>
  */
 class ProxyConnectionLogger {

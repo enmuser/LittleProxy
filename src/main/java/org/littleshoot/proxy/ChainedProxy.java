@@ -7,17 +7,20 @@ import java.net.InetSocketAddress;
 /**
  * <p>
  * Encapsulates information needed to connect to a chained proxy.
+ * 封装连接到链接代理所需的信息
  * </p>
  * 
  * <p>
  * Sub-classes may wish to extend {@link ChainedProxyAdapter} for sensible
  * defaults.
+ * 子类可能希望扩展{@link ChainedProxyAdapter}以获得合理的默认值。
  * </p>
  */
 public interface ChainedProxy extends SslEngineSource {
     /**
      * Return the {@link InetSocketAddress} for connecting to the chained proxy.
      * Returning null indicates that we won't chain.
+     * 返回{@link InetSocketAddress}以连接到链接的代理。 返回null表示我们不会链接。
      * 
      * @return The Chain Proxy with Host and Port.
      */
@@ -26,6 +29,8 @@ public interface ChainedProxy extends SslEngineSource {
     /**
      * (Optional) ensure that the connection is opened from a specific local
      * address (useful when doing NAT traversal).
+     *
+     * （可选）确保从特定的本地地址打开连接（在进行NAT遍历时很有用）
      * 
      * @return
      */
@@ -34,6 +39,8 @@ public interface ChainedProxy extends SslEngineSource {
     /**
      * Tell LittleProxy what kind of TransportProtocol to use to communicate
      * with the chained proxy.
+     *
+     * 告诉LittleProxy使用哪种TransportProtocol与链式代理进行通讯
      * 
      * @return
      */

@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 /**
  * <p>
  * Interface for receiving information about activity in the proxy.
+ * 用于接收有关代理中活动的信息的接口
  * </p>
  * 
  * <p>

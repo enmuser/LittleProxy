@@ -8,6 +8,7 @@ import javax.net.ssl.SSLSession;
 /**
  * MITMManagers encapsulate the logic required for letting LittleProxy act as a
  * man in the middle for HTTPS requests.
+ * MITMManager封装了让LittleProxy在HTTPS请求的中间充当man所需的逻辑。
  */
 public interface MitmManager {
     /**

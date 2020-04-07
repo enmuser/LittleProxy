@@ -271,6 +271,7 @@ public interface HttpProxyServerBootstrap {
     /**
      * <p>
      * Add an {@link ActivityTracker} for tracking activity in this proxy.
+     * 添加一个{@link ActivityTracker}来跟踪此代理中的活动
      * </p>
      * 
      * @param activityTracker
@@ -281,6 +282,7 @@ public interface HttpProxyServerBootstrap {
     /**
      * <p>
      * Specify the read and/or write bandwidth throttles for this proxy server. 0 indicates not throttling.
+     * 指定此代理服务器的读取和/或写入带宽限制。 0表示不节流
      * </p>
      * @param readThrottleBytesPerSecond
      * @param writeThrottleBytesPerSecond
@@ -290,6 +292,7 @@ public interface HttpProxyServerBootstrap {
 
     /**
      * All outgoing-communication of the proxy-instance is goin' to be routed via the given network-interface
+     * 代理实例的所有传出通信都将通过给定的网络接口进行路由
      *
      * @param inetSocketAddress to be used for outgoing communication
      */
@@ -301,19 +304,28 @@ public interface HttpProxyServerBootstrap {
     
     HttpProxyServerBootstrap withMaxChunkSize(int maxChunkSize);
 
-    /**
-     * When true, the proxy will accept requests that appear to be directed at an origin server (i.e. the URI in the HTTP
-     * request will contain an origin-form, rather than an absolute-form, as specified in RFC 7230, section 5.3).
-     * This is useful when the proxy is acting as a gateway/reverse proxy. <b>Note:</b> This feature should not be
-     * enabled when running as a forward proxy; doing so may cause an infinite loop if the client requests the URI of the proxy.
-     *
-     * @param allowRequestToOriginServer when true, the proxy will accept origin-form HTTP requests
-     */
-    HttpProxyServerBootstrap withAllowRequestToOriginServer(boolean allowRequestToOriginServer);
+  /**
+   * When true, the proxy will accept requests that appear to be directed at an origin server (i.e.
+   * the URI in the HTTP request will contain an origin-form, rather than an absolute-form, as
+   * specified in RFC 7230, section 5.3). This is useful when the proxy is acting as a
+   * gateway/reverse proxy. <b>Note:</b> This feature should not be enabled when running as a
+   * forward proxy; doing so may cause an infinite loop if the client requests the URI of the proxy.
+   *
+   * <p>设置为true时，代理服务器将接受似乎定向到原始服务器的请求（即，HTTP请求中的URI将包含原始形式，
+   * 而不是RFC 7230第5.3节中指定的绝对形式）。
+   * 当代理服务器充当网关/反向代理服务器时，这很有用。
+   * <b>注意：</ b>作为正向代理运行时，不应启用此功能。 如果客户端请求代理的URI，这样做可能会导致无限循环。
+   *
+   * @param allowRequestToOriginServer when true, the proxy will accept origin-form HTTP requests
+   */
+  HttpProxyServerBootstrap withAllowRequestToOriginServer(boolean allowRequestToOriginServer);
 
     /**
      * Sets the alias to use when adding Via headers to incoming and outgoing HTTP messages. The alias may be any
      * pseudonym, or if not specified, defaults to the hostname of the local machine. See RFC 7230, section 5.7.1.
+     * 设置将Via标头添加到传入和传出HTTP消息时使用的别名。
+     * 别名可以是任何假名，或者，如果未指定，则默认为本地计算机的主机名。
+     * 请参阅RFC 7230，第5.7.1节。
      *
      * @param alias the pseudonym to add to Via headers
      */
@@ -322,6 +334,7 @@ public interface HttpProxyServerBootstrap {
     /**
      * <p>
      * Build and starts the server.
+     * 构建并启动服务器
      * </p>
      *
      * @return the newly built and started server
@@ -330,6 +343,7 @@ public interface HttpProxyServerBootstrap {
 
     /**
      * Set the configuration parameters for the proxy's thread pools.
+     * 设置代理的线程池的配置参数
      *
      * @param configuration thread pool configuration
      * @return proxy server bootstrap for chaining

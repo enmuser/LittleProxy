@@ -8,6 +8,7 @@ import javax.net.ssl.SSLEngine;
 
 /**
  * Convenience base class for implementations of {@link ChainedProxy}.
+ * {@link ChainedProxy}实现的便捷基类。
  */
 public class ChainedProxyAdapter implements ChainedProxy {
     /**

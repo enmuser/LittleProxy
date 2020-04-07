@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.HttpRequest;
 
 /**
  * Convenience base class for implementations of {@link HttpFiltersSource}.
+ * {@link HttpFiltersSource}实现的便捷基类
  */
 public class HttpFiltersSourceAdapter implements HttpFiltersSource {
 

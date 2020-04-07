@@ -11,6 +11,7 @@ import org.littleshoot.proxy.impl.ClientToProxyConnection;
  * <p>
  * Encapsulates contextual information for flow information that's being
  * reported to a {@link ActivityTracker}.
+ * 为正在报告给{@link ActivityTracker}的流信息封装上下文信息
  * </p>
  */
 public class FlowContext {
