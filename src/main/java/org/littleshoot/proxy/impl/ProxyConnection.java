@@ -121,7 +121,7 @@ abstract class ProxyConnection<I extends HttpObject> extends
      * @param runsAsSslClient
      *            determines whether this connection acts as an SSL client or
      *            server (determines who does the handshake)
-     *            确定此连接是充当SSL客户端还是服务器（确定由谁进行握手）
+     *            确定此连接是充当SSL客户端还是服务器（确定由谁进行握手） //default:false
      */
 
     protected ProxyConnection(ConnectionState initialState,

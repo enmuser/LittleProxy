@@ -48,10 +48,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Primary implementation of an {@link HttpProxyServer}.
+ * {@link HttpProxyServer}的主要实现。
  *
  * <p>{@link DefaultHttpProxyServer} is bootstrapped by calling {@link #bootstrap()} or {@link
  * #bootstrapFromFile(String)}, and then calling {@link DefaultHttpProxyServerBootstrap#start()}.
  * For example:
+ *
+ * 通过调用{@link #bootstrap（）}或{@link #bootstrapFromFile（String）}，
+ * 然后调用{@link DefaultHttpProxyServerBootstrap＃start（）}来引导{@link DefaultHttpProxyServer}。
+ * 例如
  *
  * <pre>
  * DefaultHttpProxyServer server =
@@ -67,6 +72,8 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
   /**
    * The interval in ms at which the GlobalTrafficShapingHandler will run to compute and throttle
    * the proxy-to-server bandwidth.
+   *
+   * GlobalTrafficShapingHandler将运行以计算和限制代理到服务器带宽的时间间隔（以毫秒为单位）
    */
   private static final long TRAFFIC_SHAPING_CHECK_INTERVAL_MS = 250L;
 
@@ -77,23 +84,30 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
   /**
    * The proxy alias to use in the Via header if no explicit proxy alias is specified and the
    * hostname of the local machine cannot be resolved.
+   *
+   * 如果未指定显式代理别名并且无法解析本地计算机的主机名，则在Via标头中使用的代理别名
    */
   private static final String FALLBACK_PROXY_ALIAS = "littleproxy";
 
   /**
    * Our {@link ServerGroup}. Multiple proxy servers can share the same ServerGroup in order to
    * reuse threads and other such resources.
+   *
+   * 我们的{@link ServerGroup}。多个代理服务器可以共享同一ServerGroup，以便重新使用线程和其他此类资源。
+   *
    */
   private final ServerGroup serverGroup;
 
   private final TransportProtocol transportProtocol;
   /*
    * The address that the server will attempt to bind to.
+   * 服务器将尝试绑定到的地址
    */
   private final InetSocketAddress requestedAddress;
   /*
    * The actual address to which the server is bound. May be different from the requestedAddress in some circumstances,
    * for example when the requested port is 0.
+   * 服务器绑定到的实际地址。在某些情况下（例如，当请求的端口为0时）可能与请求的地址不同
    */
   private volatile InetSocketAddress localAddress;
   private volatile InetSocketAddress boundAddress;
@@ -114,20 +128,25 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
   private final boolean allowRequestsToOriginServer;
 
   /** The alias or pseudonym for this proxy, used when adding the Via header. */
+  // 此代理的别名或化名，在添加Via头时使用
   private final String proxyAlias;
 
   /**
    * True when the proxy has already been stopped by calling {@link #stop()} or {@link #abort()}.
+   * 如果通过调用{@link #stop（）}或{@link #abort（）}已停止代理，则为true
    */
   private final AtomicBoolean stopped = new AtomicBoolean(false);
 
   /** Track all ActivityTrackers for tracking proxying activity. */
+  // 跟踪所有ActivityTracker以跟踪代理活动
   private final Collection<ActivityTracker> activityTrackers =
       new ConcurrentLinkedQueue<ActivityTracker>();
 
   /**
    * Keep track of all channels created by this proxy server for later shutdown when the proxy is
    * stopped.
+   *
+   * 跟踪此代理服务器创建的所有通道，以便在代理停止后稍后关闭
    */
   private final ChannelGroup allChannels =
       new DefaultChannelGroup("HTTP-Proxy-Server", GlobalEventExecutor.INSTANCE);
@@ -135,6 +154,8 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
   /**
    * JVM shutdown hook to shutdown this proxy server. Declared as a class-level variable to allow
    * removing the shutdown hook when the proxy server is stopped normally.
+   *
+   * JVM shutdown挂钩可关闭此代理服务器。声明为类级别变量，以允许正常停止代理服务器时删除关机钩子
    */
   private final Thread jvmShutdownHook =
       new Thread(
@@ -148,7 +169,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
   /**
    * Bootstrap a new {@link DefaultHttpProxyServer} starting from scratch.
-   *
+   * 从头开始引导新的{@link DefaultHttpProxyServer}
    * @return
    */
   public static HttpProxyServerBootstrap bootstrap() {
@@ -157,6 +178,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
   /**
    * Bootstrap a new {@link DefaultHttpProxyServer} using defaults from the given file.
+   * 使用给定文件中的默认值引导新的{@link DefaultHttpProxyServer}。
    *
    * @param path
    * @return
@@ -178,33 +200,50 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
   /**
    * Creates a new proxy server.
+   * 创建一个新的代理服务器
    *
    * @param serverGroup our ServerGroup for shared thread pools and such
+   *                    我们的ServerGroup用于共享线程池等
    * @param transportProtocol The protocol to use for data transport
+   *                          用于数据传输的协议
    * @param requestedAddress The address on which this server will listen
+   *                         该服务器将监听的地址
    * @param sslEngineSource (optional) if specified, this Proxy will encrypt inbound connections
    *     from clients using an {@link SSLEngine} obtained from this {@link SslEngineSource}.
+   *         此代理将使用从此{@link SslEngineSource}获取的{@link SSLEngine}加密来自客户端的入站连接
    * @param authenticateSslClients Indicate whether or not to authenticate clients when using SSL
+   *          指示使用SSL时是否对客户端进行身份验证
    * @param proxyAuthenticator (optional) If specified, requests to the proxy will be authenticated
    *     using HTTP BASIC authentication per the provided {@link ProxyAuthenticator}
+   *      对代理的请求将通过提供的{@link ProxyAuthenticator}使用HTTP BASIC身份验证进行身份验证
    * @param chainProxyManager The proxy to send requests to if chaining proxies. Typically <code>
    *     null</code>.
+   *                          代理将请求发送到链接代理。通常为<code>null </ code>
    * @param mitmManager The {@link MitmManager} to use for man in the middle'ing CONNECT requests
+   *                    {@link MitmManager}用于中间的CONNECT请求中的人
    * @param filtersSource Source for {@link HttpFilters}
    * @param transparent If true, this proxy will run as a transparent proxy. This will not modify
    *     the response, and will only modify the request to amend the URI if the target is the origin
+   *                    该代理将作为透明代理运行。如果目标是源，这将不会修改响应，只会修改请求以修改URI。
    *     server (to comply with RFC 7230 section 5.3.1).
    * @param idleConnectionTimeout The timeout (in seconds) for auto-closing idle connections.
+   *                              自动关闭空闲连接的超时时间（以秒为单位）
    * @param activityTrackers for tracking activity on this proxy
    * @param connectTimeout number of milliseconds to wait to connect to the upstream server
+   *                       等待连接到上游服务器的毫秒数
    * @param serverResolver the {@link HostResolver} to use for resolving server addresses
+   *                       {@link HostResolver}用于解析服务器地址
    * @param readThrottleBytesPerSecond read throttle bandwidth
+   *                                   读取节流带宽
    * @param writeThrottleBytesPerSecond write throttle bandwidth
+   *                                    写节流带宽
+   *
    * @param maxInitialLineLength
    * @param maxHeaderSize
    * @param maxChunkSize
    * @param allowRequestsToOriginServer when true, allow the proxy to handle requests that contain
    *     an origin-form URI, as defined in RFC 7230 5.3.1
+   *                                    允许代理处理包含原始形式URI的请求，如RFC 7230 5.3.1所定义
    */
   private DefaultHttpProxyServer(
       ServerGroup serverGroup,
@@ -258,6 +297,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
     if (proxyAlias == null) {
       // attempt to resolve the name of the local machine. if it cannot be resolved, use the
       // fallback name.
+      // 尝试解析本地计算机的名称。如果无法解析，请使用后备名称
       String hostname = ProxyUtils.getHostName();
       if (hostname == null) {
         hostname = FALLBACK_PROXY_ALIAS;
@@ -275,6 +315,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
   /**
    * Creates a new GlobalTrafficShapingHandler for this HttpProxyServer, using this proxy's
    * proxyToServerEventLoop.
+   * 使用此代理的proxyToServerEventLoop为此HttpProxyServer创建一个新的GlobalTrafficShapingHandler
    *
    * @param transportProtocol
    * @param readThrottleBytesPerSecond
@@ -339,6 +380,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
     } else {
       // don't create a GlobalTrafficShapingHandler if throttling was not enabled and is still not
       // enabled
+      // 如果未启用节流并且仍未启用节流，则不要创建GlobalTrafficShapingHandle
       if (readThrottleBytesPerSecond > 0 || writeThrottleBytesPerSecond > 0) {
         globalTrafficShapingHandler =
             createGlobalTrafficShapingHandler(
@@ -413,11 +455,13 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
   /**
    * Performs cleanup necessary to stop the server. Closes all channels opened by the server and
    * unregisters this server from the server group.
+   * 执行停止服务器所需的清理。关闭服务器打开的所有通道，并从服务器组中注销该服务器
    *
-   * @param graceful when true, waits for requests to terminate before stopping the server
+   * @param graceful when true, waits for requests to terminate before stopping the server 在停止服务器之前等待请求终止
    */
   protected void doStop(boolean graceful) {
     // only stop the server if it hasn't already been stopped
+    // 仅在尚未停止的服务器上停止它
     if (stopped.compareAndSet(false, true)) {
       if (graceful) {
         LOG.info("Shutting down proxy server gracefully");
@@ -443,6 +487,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
   /**
    * Register a new {@link Channel} with this server, for later closing.
+   * 在此服务器上注册新的{@link Channel}，以供日后关闭
    *
    * @param channel
    */
@@ -452,9 +497,11 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
   /**
    * Closes all channels opened by this proxy server.
+   * 关闭此代理服务器打开的所有通道
    *
    * @param graceful when false, attempts to shutdown all channels immediately and ignores any
    *     channel-closing exceptions
+   *                 尝试立即关闭所有通道，并忽略任何通道关闭异常
    */
   protected void closeAllChannels(boolean graceful) {
     LOG.info("Closing all channels " + (graceful ? "(graceful)" : "(non-graceful)"));
@@ -463,12 +510,13 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
     // if this is a graceful shutdown, log any channel closing failures. if this isn't a graceful
     // shutdown, ignore them.
+    // 如果这是正常关闭，请记录所有通道关闭失败。如果这不是正常的关闭，请忽略它们。
     if (graceful) {
       try {
         future.await(10, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-
+        //在等待频道正常关闭时中断
         LOG.warn("Interrupted while waiting for channels to shut down gracefully.");
       }
 
